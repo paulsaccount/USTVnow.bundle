@@ -1,5 +1,3 @@
-from xml.sax.saxutils import unescape
-
 TITLE = 'USTVnow'
 ART = 'art-default.jpeg'
 ICON = 'icon-default.png'
@@ -50,8 +48,8 @@ def GetChannels():
 
 			oc.add(VideoClipObject(
 				url = url,
-				title = name + " - " + unescape(title),
-				summary = unescape(summary.strip()),
+				title = name + " - " + String.DecodeHTMLEntities(title),
+				summary = String.DecodeHTMLEntities(summary.strip()),
 				art = thumb,
 				thumb = thumb
 			))
