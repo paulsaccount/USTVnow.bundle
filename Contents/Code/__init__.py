@@ -7,6 +7,9 @@ BASE_URL = "http://m.ustvnow.com"
 LOGIN_URL = BASE_URL + "/iphone/1/live/login?username=%s&password=%s"
 MOBILE_URL = BASE_URL + "/iphone/1/live/playingnow?pgonly=true&token=%s"
 
+WEBVIDEOURL = "http://www.ustvnow.com?a=do_login&force_redirect=1&manage_proper=1&input_username=%s&input_password=%s#%s/%s"
+RESOLUTION = {'Low': 350, 'Med': 650, 'High': 950, 'HD': 2500}
+
 ####################################################################################################
 def Start():
 
@@ -41,7 +44,12 @@ def GetChannels():
 		url = feed.xpath('.//a[@class="viewlink"]')
 		if len(url) > 0:
 			name = feed.xpath('.//h1')[0].text
-			url = BASE_URL + url[0].get("href")
+
+			if Prefs["streamtype"] == "LiveStream":
+				url = BASE_URL + url[0].get("href")
+			else:
+				url = WEBVIDEOURL % (Prefs["username"], Prefs["password"], name, RESOLUTION[Prefs["resolution"]])
+
 			title = feed.xpath('.//td[@class="nowplaying_item"]')[0].text
 			summary = feed.xpath('.//td[@class="nowplaying_itemdesc"]')[0].text_content()
 			thumb = R(name.lower() + ".jpg")
