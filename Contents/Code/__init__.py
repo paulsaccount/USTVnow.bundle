@@ -3,9 +3,10 @@ ART = 'art-default.jpeg'
 ICON = 'icon-default.png'
 ICON_PREFS = 'icon-prefs.png'
 
-BASE_URL = "http://m.ustvnow.com"
-LOGIN_URL = BASE_URL + "/iphone/1/live/login?username=%s&password=%s"
-MOBILE_URL = BASE_URL + "/iphone/1/live/playingnow?pgonly=true&token=%s"
+BASE_URL 			= "http://m.ustvnow.com"
+LOGIN_URL 		= BASE_URL + "/iphone/1/live/login?username=%s&password=%s"
+LIVETV 				= BASE_URL + "/iphone/1/live/playingnow?pgonly=true&token=%s"
+RECORDINGS		= BASE_URL + "/iphone/1/dvr/viewdvrlist?pgonly=true&token=%s"
 
 WEBVIDEOURL = "http://www.ustvnow.com?a=do_login&force_redirect=1&manage_proper=1&input_username=%s&input_password=%s#%s/%s"
 RESOLUTION = {'Low': 350, 'Med': 650, 'High': 950, 'HD': 2500}
@@ -29,7 +30,8 @@ def MainMenu():
 	Login()
 
 	oc = ObjectContainer()
-	oc.add(DirectoryObject(key = Callback(GetChannels), title = 'Live'))
+	oc.add(DirectoryObject(key = Callback(GetChannels), title = 'Live TV'))
+	oc.add(DirectoryObject(key = Callback(GetRecordings), title = 'Recordings'))
 	oc.add(PrefsObject(title = 'Preferences', thumb = R(ICON_PREFS)))
 	return oc
 
@@ -38,7 +40,7 @@ def MainMenu():
 def GetChannels():
 
 	oc = ObjectContainer()
-	page = HTML.ElementFromURL(MOBILE_URL % (Dict['token']))
+	page = HTML.ElementFromURL(LIVETV % (Dict['token']))
 	feeds = page.xpath("//div[contains(@class, 'livetv-content-pages')]")
 	for feed in feeds:
 		url = feed.xpath('.//a[@class="viewlink"]')
@@ -58,8 +60,36 @@ def GetChannels():
 				url = url,
 				title = name + " - " + String.DecodeHTMLEntities(title),
 				summary = String.DecodeHTMLEntities(summary.strip()),
-				art = thumb,
-				thumb = thumb
+				thumb = thumb,
+				art = thumb
+			))
+
+	return oc
+
+####################################################################################################
+@route('/video/ustvnow/getrecordings')
+def GetRecordings():
+
+	oc = ObjectContainer()
+
+	page = HTML.ElementFromURL(RECORDINGS % (Dict['token']))
+	recordings = page.xpath('//div[contains(@class, "reccontentpage")]')
+
+	for rec in recordings:
+		url = rec.xpath('.//a[@class="viewlink"]')
+		if len(url) > 0:
+			name = rec.xpath('.//h1')[0].text
+			url = BASE_URL + url[0].get("href")
+			title = rec.xpath('.//td[@class="nowplaying_item"]')[0].text
+			summary = rec.xpath('.//td[@class="nowplaying_itemdesc"]')[0].text_content()
+			thumb = R(name.lower() + ".jpg")
+
+			oc.add(VideoClipObject(
+				url = url,
+				title = title,
+				summary = String.DecodeHTMLEntities(summary.strip()),
+				thumb = thumb,
+				art = thumb
 			))
 
 	return oc
