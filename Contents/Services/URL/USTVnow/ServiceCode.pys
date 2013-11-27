@@ -1,18 +1,18 @@
 ####################################################################################################
 def MetadataObjectForURL(url):
 
-    return VideoClipObject(
-        title = "USTVnow"
-    )
+	return VideoClipObject(
+		title = "USTVnow"
+	)
 
 ####################################################################################################
 def MediaObjectsForURL(url):
 
 	video_url = HTML.ElementFromURL(url).xpath("//video")[0].get("src")
-    return [
-        MediaObject(
-            parts = [PartObject(key = HTTPLiveStreamURL(url = video_url))],
-        )
-    ]
+	return [
+		MediaObject(
+			parts = [PartObject(key = HTTPLiveStreamURL(url = video_url))],
+		)
+	]
 
 ####################################################################################################

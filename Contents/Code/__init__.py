@@ -3,9 +3,9 @@ ART = 'art-default.jpeg'
 ICON = 'icon-default.png'
 ICON_PREFS = 'icon-prefs.png'
 
-BASE_URL 		= "http://m.ustvnow.com"
-LOGIN_URL 		= BASE_URL + "/iphone/1/live/login?username=%s&password=%s"
-LIVETV 			= BASE_URL + "/iphone/1/live/playingnow?pgonly=true&token=%s"
+BASE_URL		= "http://m.ustvnow.com"
+LOGIN_URL		= BASE_URL + "/iphone/1/live/login?username=%s&password=%s"
+LIVETV			= BASE_URL + "/iphone/1/live/playingnow?pgonly=true&token=%s"
 RECORDINGS		= BASE_URL + "/iphone/1/dvr/viewdvrlist?pgonly=true&token=%s"
 
 ####################################################################################################
@@ -43,7 +43,7 @@ def GetChannels():
 		url = feed.xpath('.//a[@class="viewlink"]')
 		if len(url) > 0:
 			name = feed.xpath('.//h1')[0].text
-            url = BASE_URL + url[0].get("href")
+			url = BASE_URL + url[0].get("href")
 			title = feed.xpath('.//td[@class="nowplaying_item"]')[0].text
 			summary = feed.xpath('.//td[@class="nowplaying_itemdesc"]')[0].text_content()
 			thumb = R(name.lower() + ".jpg")
