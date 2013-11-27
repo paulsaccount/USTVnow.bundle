@@ -5,23 +5,14 @@ def MetadataObjectForURL(url):
         title = "USTVnow"
     )
 
-
 ####################################################################################################
 def MediaObjectsForURL(url):
 
-	if url.startswith("http://m.ustvnow.com"):
-		video_url = HTML.ElementFromURL(url).xpath("//video")[0].get("src")
-		return [
-			MediaObject(
-				parts = [PartObject(key = HTTPLiveStreamURL(url = video_url))],
-			)
-		]
-	else:
-		return [
-			MediaObject(
-				parts = [PartObject(key = WebVideoURL(url = url))],
-			)
-		]
-
+	video_url = HTML.ElementFromURL(url).xpath("//video")[0].get("src")
+    return [
+        MediaObject(
+            parts = [PartObject(key = HTTPLiveStreamURL(url = video_url))],
+        )
+    ]
 
 ####################################################################################################
