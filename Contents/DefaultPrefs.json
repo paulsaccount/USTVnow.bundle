@@ -11,5 +11,11 @@
         "label": "Password",
         "default": "",
         "option": "hidden"
+    },
+    {
+        "id": "desktop_version",
+        "type": "bool",
+        "label": "Use Desktop Version (only compatible with desktop clients)",
+        "default": "false"
     }
 ]

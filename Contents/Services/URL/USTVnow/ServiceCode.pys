@@ -1,18 +1,43 @@
-####################################################################################################
-def MetadataObjectForURL(url):
+AudioStreamObject.language_code = Locale.Language.English
 
+####################################################################################################
+def MetadataObjectForURL(url):	
+	hash = url.split('#')[1]
+	parts = String.Decode(hash).split('::')	
+	
 	return VideoClipObject(
-		title = "USTVnow"
+		title = parts[1],
+		summary = parts[0],
+		thumb = R(parts[2] + '.jpg')
 	)
 
 ####################################################################################################
-def MediaObjectsForURL(url):
-
-	video_url = HTML.ElementFromURL(url).xpath("//video")[0].get("src")
+def MediaObjectsForURL(url):	
 	return [
 		MediaObject(
-			parts = [PartObject(key = HTTPLiveStreamURL(url = video_url))],
+			parts = [PartObject(key=HTTPLiveStreamURL(Callback(PlayVideo, url=url)))],
+			audio_channels = 2
 		)
 	]
-
+	
 ####################################################################################################
+def PlayVideo(url):
+	new_playlist = ''
+	video_url = HTML.ElementFromURL(url).xpath('//video')[0].get('src')	
+	original_playlist = HTTP.Request(video_url).content
+	base_url = '/'.join(video_url.split('/')[:-1])	
+	for line in original_playlist.splitlines():
+		if line:
+			# strip whitespaces
+			if '://' in line:
+				new_playlist += line + '\n'
+				continue
+
+			if '.m3u8' in line:
+				# create absolute URIs
+				line = base_url + '/' + line
+				new_playlist += line + '\n'
+				continue
+
+			new_playlist += line + '\n'
+	return new_playlist
