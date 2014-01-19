@@ -8,13 +8,13 @@ ICON_PREFS 	= 'icon-prefs.png'
 
 BASE_URL		 = 'http://m.ustvnow.com'
 GUIDE			 = 'http://www.ustvnow.com?a=do_login&force_redirect=1&manage_proper=1&input_username=%s&input_password=%s'
+RECORD_PROGRAM	 = 'http://www.ustvnow.com/recordprogram.php?id=%s&token=%s'
+DELETE_RECORDING = 'http://www.ustvnow.com/recordprogram.php?delete=%s&token=%s'
 LOGIN_URL		 = BASE_URL + '/iphone/1/live/login?username=%s&password=%s'
 LIVETV			 = BASE_URL + '/iphone/1/live/playingnow?pgonly=true&token=%s'
 RECORDINGS		 = BASE_URL + '/iphone/1/dvr/viewdvrlist?pgonly=true&token=%s'
 FAVORITES		 = BASE_URL + '/iphone/1/live/showfavs?pgonly=true&token=%s'
-RECORD_PROGRAM	 = 'http://www.ustvnow.com/recordprogram.php?id=%s&token=%s'
-DELETE_RECORDING = 'http://www.ustvnow.com/recordprogram.php?delete=%s&token=%s'
-ADD_FAVORITE	 = 'http://m.ustvnow.com/iphone/1/live/updatefavs?prgsvcid=%s&token=%s&action=add'
+ADD_FAVORITE	 = BASE_URL + '/iphone/1/live/updatefavs?prgsvcid=%s&token=%s&action=add'
 
 ####################################################################################################
 def FormatDate(date):
@@ -38,10 +38,6 @@ def URLEncode(title, summary, network):
 	
 ####################################################################################################
 def Start():
-	HTTP.Headers['User-Agent'] = """"Mozilla/5.0 (iPhone; U; CPU iPhone OS 4_0 like Mac OS X; en-us)
-									 AppleWebKit/532.9 (KHTML, like Gecko) Version/4.0.5 Mobile/8A293
-									 Safari/6531.22.7"""
-
 	ObjectContainer.title1 = TITLE
 	ObjectContainer.art = R(ART)
 	DirectoryObject.thumb = R(ICON)
@@ -52,18 +48,11 @@ def Start():
 def MainMenu(view_group='InfoList'):
 	Login()
 	oc = ObjectContainer()	
-	oc.add(DirectoryObject(key = Callback(GetLiveTV), title = 'Watch Live TV'))
+	oc.add(DirectoryObject(key = Callback(GetChannels), title = 'All Channels'))
+	oc.add(DirectoryObject(key = Callback(GetFavorites), title = 'My Favorites'))
 	oc.add(DirectoryObject(key = Callback(GetRecordings), title = 'My Recordings'))
 	oc.add(DirectoryObject(key = Callback(GetGuide), title = 'Channel Guide'))
 	oc.add(PrefsObject(title = 'Preferences', thumb = R(ICON_PREFS)))
-	return oc
-
-####################################################################################################
-@route(PREFIX + '/getlivetv')
-def GetLiveTV():
-	oc = ObjectContainer(title2='Watch Live TV')
-	oc.add(DirectoryObject(key = Callback(GetChannels), title = 'All Channels'))
-	oc.add(DirectoryObject(key = Callback(GetFavorites), title = 'My Favorites'))
 	return oc
 
 ####################################################################################################
@@ -187,13 +176,13 @@ def GetGuide():
 				fav_id = ''
 
 			show_info.append({
-					'channel': href.get('title').split('Watch ')[1],
-					'time': FormatDate(show.get('title')),
-					'title': href.text,
-					'desc': desc,
-					'rec_id': rec_id,
-					'del_id': del_id,
-					'fav_id': fav_id
+				'channel': href.get('title').split('Watch ')[1],
+				'time': FormatDate(show.get('title')),
+				'title': href.text,
+				'desc': desc,
+				'rec_id': rec_id,
+				'del_id': del_id,
+				'fav_id': fav_id
 				}
 			)
 		show_info = JSON.StringFromObject(show_info)
