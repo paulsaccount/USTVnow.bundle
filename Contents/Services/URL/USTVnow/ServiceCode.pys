@@ -34,28 +34,24 @@ def MediaObjectsForURL(url):
 ####################################################################################################	
 @indirect
 def PlayVideo(url):
-	return IndirectResponse(VideoClipObject, key=HTTPLiveStreamURL(url=GetHLSStreams(video_url)))
-
-####################################################################################################
-def GetHLSStreams(url):
 	streams = []
 	playList = HTTP.Request(url).content
 	for line in playList.splitlines():
-		if "BANDWIDTH" in line:
-			stream			  = {}
-			stream["bitrate"] = int(Regex('(?<=BANDWIDTH=)[0-9]+').search(line).group(0))		 
+		if 'BANDWIDTH' in line:
+			stream = {}
+			stream['bitrate'] = int(Regex('(?<=BANDWIDTH=)[0-9]+').search(line).group(0))		 
 
-			if "RESOLUTION" in line:
-				stream["resolution"] = int(Regex('(?<=RESOLUTION=)[0-9]+x[0-9]+').search(line).group(0).split("x")[1])
+			if 'RESOLUTION' in line:
+				stream['resolution'] = int(Regex('(?<=RESOLUTION=)[0-9]+x[0-9]+').search(line).group(0).split('x')[1])
 			else:
-				stream["resolution"] = 0
+				stream['resolution'] = 0
 
-		elif ".m3u8" in line:
-			if not line.startswith("http://"):
-				path		  = url[ : url.rfind('/') + 1]
-				stream["url"] = path + line
+		elif '.m3u8' in line:
+			if not line.startswith('http://'):
+				path = url[:url.rfind('/') + 1]
+				stream['url'] = path + line
 					
 			streams.append(stream)
 				
-	sorted_streams = sorted(streams, key = lambda stream: stream["bitrate"], reverse = True)
-	return sorted_streams[0]['url']
+	sorted_streams = sorted(streams, key = lambda stream: stream['bitrate'], reverse = True)
+	return IndirectResponse(VideoClipObject, key=HTTPLiveStreamURL(url=sorted_streams[0]['url']))

@@ -34,6 +34,12 @@ def GetURL(network):
 		return None
 		
 def URLEncode(title, summary, network):
+	if title is None:
+		title = ''
+	if summary is None:
+		summary = ''
+	if network is None:
+		network = ''
 	return '#' + String.Encode(summary.strip() + '::' + title + '::' + network)
 	
 ####################################################################################################
@@ -62,20 +68,24 @@ def GetChannels():
 	page = HTML.ElementFromURL(LIVETV % (Dict['token']))
 	feeds = page.xpath("//div[contains(@class, 'livetv-content-pages')]")
 	for feed in feeds:
-		url = feed.xpath('.//a[@class="viewlink"]')
+		url = feed.xpath('.//a[@class="viewlink"]')		
 		if len(url) > 0:
 			name = feed.xpath('.//h1')[0].text
 			url = BASE_URL + url[0].get("href")		
-			title = feed.xpath('.//td[@class="nowplaying_item"]')[0].text
-			summary = feed.xpath('.//td[@class="nowplaying_itemdesc"]')[0].text_content()
-			thumb = R(name.lower() + '.jpg')
-			encoded_data = URLEncode(title, summary, name)
+			title = feed.xpath('.//td[@class="nowplaying_item"]')[0].text			
+			thumb = R(name.lower() + '.jpg')			
+			summary = feed.xpath("//a[contains(@href, '#" + feed.get('id') + "')]/..//td[@class='nowplaying_desc']")
+			if len(summary) > 0 and len(summary[0].text_content()) > 0:
+				summary = summary[0].text_content()
+			else:
+				summary = 'No description available'
+			
+			encoded_data = URLEncode(title, summary, name)	
 			oc.add(VideoClipObject(
 				url = url + encoded_data,
 				title = name + ' - ' + String.DecodeHTMLEntities(title),
 				summary = String.DecodeHTMLEntities(summary.strip()),
-				thumb = thumb,
-				art = thumb
+				thumb = thumb
 			))
 			
 	return oc
@@ -124,7 +134,7 @@ def GetRecordings():
 			else:
 				summary = 'No description available'
 			
-			thumb = R(name.lower() + '.jpg')
+			thumb = R(name + '.jpg')
 			encoded_data = URLEncode(title, summary, name)
 			oc.add(VideoClipObject(
 				url = url + encoded_data,
