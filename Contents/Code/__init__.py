@@ -15,6 +15,9 @@ LIVETV			 = BASE_URL + '/iphone/1/live/playingnow?pgonly=true&token=%s'
 RECORDINGS		 = BASE_URL + '/iphone/1/dvr/viewdvrlist?pgonly=true&token=%s'
 FAVORITES		 = BASE_URL + '/iphone/1/live/showfavs?pgonly=true&token=%s'
 ADD_FAVORITE	 = BASE_URL + '/iphone/1/live/updatefavs?prgsvcid=%s&token=%s&action=add'
+XPATHS			 = {'Live': "//div[contains(@class, 'livetv-content-pages')]",
+					'Favorites': "//div[contains(@class, 'livetv-content-pages')]",
+					'Recordings': "//div[contains(@class, 'reccontentpage')]"}
 
 ####################################################################################################
 def FormatDate(date):
@@ -22,17 +25,16 @@ def FormatDate(date):
 	start = datetime.strptime(times[0], "%H:%M%p").strftime("%I:%M%p")
 	end = datetime.strptime(times[1], "%H:%M%p").strftime("%I:%M%p")
 	return start + '-' + end
-	
+
 def GetURL(network):
 	page = HTML.ElementFromURL(LIVETV % (Dict['token']))
 	node = page.xpath("//h1[contains(., '" + network + "')]/../..")
 	href = node[0].xpath(".//a[contains(@class, 'viewlink')]")
-	
 	if len(href) > 0:
 		return href[0].get('href')
 	else:
 		return None
-		
+
 def URLEncode(title, summary, network):
 	if title is None:
 		title = ''
@@ -41,7 +43,7 @@ def URLEncode(title, summary, network):
 	if network is None:
 		network = ''
 	return '#' + String.Encode(summary.strip() + '::' + title + '::' + network)
-	
+
 ####################################################################################################
 def Start():
 	ObjectContainer.title1 = TITLE
@@ -53,56 +55,31 @@ def Start():
 @handler(PREFIX, TITLE, art=ART, thumb=ICON)
 def MainMenu(view_group='InfoList'):
 	Login()
-	oc = ObjectContainer()	
-	oc.add(DirectoryObject(key = Callback(GetChannels), title = 'All Channels'))
-	oc.add(DirectoryObject(key = Callback(GetFavorites), title = 'My Favorites'))
-	oc.add(DirectoryObject(key = Callback(GetRecordings), title = 'My Recordings'))
-	oc.add(DirectoryObject(key = Callback(GetGuide), title = 'Channel Guide'))
+	oc = ObjectContainer()
+	oc.add(DirectoryObject(key = Callback(GetItems, title='All Channels', url=LIVETV, xp=XPATHS['Live']), title = 'All Channels'))
+	oc.add(DirectoryObject(key = Callback(GetItems, title='My Favorites', url=FAVORITES, xp=XPATHS['Favorites']), title = 'My Favorites'))
+	oc.add(DirectoryObject(key = Callback(GetItems, title='My Recordings', url=RECORDINGS, xp=XPATHS['Recordings']), title = 'My Recordings'))
+	oc.add(DirectoryObject(key = Callback(GetGuide), title='Channel Guide'))
 	oc.add(PrefsObject(title = 'Preferences', thumb = R(ICON_PREFS)))
 	return oc
 
 ####################################################################################################
-@route(PREFIX + '/getchannels')
-def GetChannels():	
-	oc = ObjectContainer(title2='Live TV')
-	page = HTML.ElementFromURL(LIVETV % (Dict['token']))
-	feeds = page.xpath("//div[contains(@class, 'livetv-content-pages')]")
-	for feed in feeds:
-		url = feed.xpath('.//a[@class="viewlink"]')		
+@route(PREFIX + '/getitems')
+def GetItems(title, url, xp):
+	oc = ObjectContainer(title2=title)
+	page = HTML.ElementFromURL(url % (Dict['token']))
+	items = page.xpath(xp)
+	for item in items:
+		url = item.xpath('.//a[@class="viewlink"]')
 		if len(url) > 0:
-			name = feed.xpath('.//h1')[0].text
-			url = BASE_URL + url[0].get("href")		
-			title = feed.xpath('.//td[@class="nowplaying_item"]')[0].text			
-			thumb = R(name.lower() + '.jpg')			
-			summary = feed.xpath("//a[contains(@href, '#" + feed.get('id') + "')]/..//td[@class='nowplaying_desc']")
+			name = item.xpath('.//h1')[0].text
+			url = BASE_URL + url[0].get("href")
+			title = item.xpath('.//td[@class="nowplaying_item"]')[0].text
+			summary = item.xpath("//a[contains(@href, '#" + item.get('id') + "')]/..//td[@class='nowplaying_desc']")
 			if len(summary) > 0 and len(summary[0].text_content()) > 0:
 				summary = summary[0].text_content()
 			else:
 				summary = 'No description available'
-			
-			encoded_data = URLEncode(title, summary, name)	
-			oc.add(VideoClipObject(
-				url = url + encoded_data,
-				title = name + ' - ' + String.DecodeHTMLEntities(title),
-				summary = String.DecodeHTMLEntities(summary.strip()),
-				thumb = thumb
-			))
-			
-	return oc
-
-####################################################################################################
-@route(PREFIX + '/getfavorites')
-def GetFavorites():
-	oc = ObjectContainer(title2='My Favorites')
-	page = HTML.ElementFromURL(FAVORITES % (Dict['token']))
-	favorites = page.xpath("//div[contains(@class, 'livetv-content-pages')]")
-	for fav in favorites:
-		url = fav.xpath('.//a[@class="viewlink"]')
-		if len(url) > 0:
-			name = fav.xpath('.//h1')[0].text
-			url = BASE_URL + url[0].get("href")		
-			title = fav.xpath('.//td[@class="nowplaying_item"]')[0].text
-			summary = fav.xpath('.//td[@class="nowplaying_itemdesc"]')[0].text_content()
 			encoded_data = URLEncode(title, summary, name)
 			oc.add(VideoClipObject(
 				url = url + encoded_data,
@@ -110,44 +87,12 @@ def GetFavorites():
 				summary = String.DecodeHTMLEntities(summary.strip()),
 				thumb = R(name + '.jpg')
 			))
-			
 	if len(oc) == 0:
-		return ObjectContainer(title2='Favorites', header='Favorites', message='No Favorites found')
+		return ObjectContainer(title2=title, header=title, message='None Found')
 	else:
 		return oc
 
 ####################################################################################################
-@route(PREFIX + '/getrecordings')
-def GetRecordings():
-	oc = ObjectContainer(title2='Recordings')
-	page = HTML.ElementFromURL(RECORDINGS % (Dict['token']))
-	recordings = page.xpath('//div[contains(@class, "reccontentpage")]')
-	for rec in recordings:
-		url = rec.xpath('.//a[@class="viewlink"]')
-		if len(url) > 0:
-			name = rec.xpath('.//h1')[0].text
-			url = BASE_URL + url[0].get("href")
-			title = rec.xpath('.//td[@class="nowplaying_item"]')[0].text
-			summary = rec.xpath('.//td[@class="nowplaying_itemdesc"]')
-			if len(summary) > 0:
-				summary = summary[0].text_content()
-			else:
-				summary = 'No description available'
-			
-			thumb = R(name + '.jpg')
-			encoded_data = URLEncode(title, summary, name)
-			oc.add(VideoClipObject(
-				url = url + encoded_data,
-				title = title,
-				summary = String.DecodeHTMLEntities(summary.strip()),
-				thumb = thumb
-			))
-	if len(oc) == 0:
-		return ObjectContainer(title2='Recordings', header='Recordings', message='No Recordings found')
-	else:
-		return oc
-
-####################################################################################################		
 @route(PREFIX + '/getguide')
 def GetGuide():
 	oc = ObjectContainer(title2='Guide')
@@ -160,22 +105,22 @@ def GetGuide():
 		for show in shows:
 			content = show.xpath('.//div[contains(@class, "cntnt")]')[0]
 			href = content.xpath('.//a')[0]
-			desc = content.xpath('.//div')[0].text		
+			desc = content.xpath('.//div')[0].text
 			if desc is None:
-				desc = 'No description available'			
-			
+				desc = 'No description available'
+
 			rec_id = content.xpath('.//a[contains(@title, "Record Program")]')
 			if len(rec_id) > 0:
 				rec_id = rec_id[0].get('onclick').split("javascript:recordProgram('")[1].split('\'')[0]
 			else:
 				rec_id = ''
-				
+
 			del_id = content.xpath('.//a[contains(@title, "Delete Marked Recording")]')
 			if len(del_id) > 0:
 				del_id = del_id[0].get('onclick').split("javascript:deleteProgram('")[1].split('\'')[0]
 			else:
 				del_id = ''
-			
+
 			fav_id = content.xpath('.//a[contains(@class, "play")]')
 			if len(fav_id) > 0:
 				fav_id = fav_id[0].get('onclick').split('playVideo("')[1].split('_')[0]
@@ -193,9 +138,9 @@ def GetGuide():
 				}
 			)
 		show_info = JSON.StringFromObject(show_info)
-		oc.add(DirectoryObject(key = Callback(GuideSubMenu, title=name, data=String.Encode(show_info)), title=name, thumb=R(name + '.jpg')))		
+		oc.add(DirectoryObject(key = Callback(GuideSubMenu, title=name, data=String.Encode(show_info)), title=name, thumb=R(name + '.jpg')))
 	return oc
-		
+
 ####################################################################################################
 @route(PREFIX + '/guidesubmenu')
 def GuideSubMenu(title, data):
@@ -206,7 +151,7 @@ def GuideSubMenu(title, data):
 		ids = show['rec_id'] + '||' + show['del_id'] + '||' + show['fav_id']
 		oc.add(DirectoryObject(key = Callback(ChannelOptions, title=show['title'], summary=show['desc'], network=show['channel'], ids=ids), title=title, summary=show['desc']))
 	return oc
-	
+
 ####################################################################################################
 @route(PREFIX + '/channeloptions')
 def ChannelOptions(title, summary, network, ids):
@@ -214,7 +159,7 @@ def ChannelOptions(title, summary, network, ids):
 	url = GetURL(network)
 	rec_id, del_id, fav_id = ids.split('||')
 	encoded_data = URLEncode(title, summary, network)
-	
+
 	if url is not None:
 		oc.add(VideoClipObject(
 			url = BASE_URL + url + encoded_data,
@@ -222,7 +167,7 @@ def ChannelOptions(title, summary, network, ids):
 			summary = summary,
 			thumb = R(network + ".jpg")
 		))
-		if rec_id is not '':		
+		if rec_id is not '':
 			oc.add(DirectoryObject(key = Callback(RecordMenu, type='Record', id=rec_id), title='Record'))
 		if del_id is not '':
 			oc.add(DirectoryObject(key = Callback(RecordMenu, type='Delete', id=del_id), title='Delete'))
@@ -231,7 +176,7 @@ def ChannelOptions(title, summary, network, ids):
 	else:
 		return ObjectContainer(header=network, message='You must be a paid subscriber to view these options')
 	return oc
-	
+
 ####################################################################################################
 @route(PREFIX + '/recordmenu')
 def RecordMenu(type, id):
@@ -240,13 +185,13 @@ def RecordMenu(type, id):
 	else:
 		data = HTTP.Request(DELETE_RECORDING % (id, Dict['token']))
 	return ObjectContainer(title2=type, header=type, message=data.content)
-	
+
 ####################################################################################################
 @route(PREFIX + '/favoritemenu')
 def FavoriteMenu(id):
 	data = XML.ElementFromURL(ADD_FAVORITE % (id, Dict['token']))
 	return ObjectContainer(title2='Add to Favorites', header='Favorites', message='Favorite added successfully')
-	
+
 ####################################################################################################
 def Login():
 	Dict['token'] = ""
