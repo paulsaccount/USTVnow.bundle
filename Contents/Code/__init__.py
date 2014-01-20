@@ -93,14 +93,12 @@ def GetFavorites():
 			url = BASE_URL + url[0].get("href")		
 			title = fav.xpath('.//td[@class="nowplaying_item"]')[0].text
 			summary = fav.xpath('.//td[@class="nowplaying_itemdesc"]')[0].text_content()
-			thumb = R(name.lower() + '.jpg')
 			encoded_data = URLEncode(title, summary, name)
 			oc.add(VideoClipObject(
 				url = url + encoded_data,
 				title = name + " - " + String.DecodeHTMLEntities(title),
 				summary = String.DecodeHTMLEntities(summary.strip()),
-				thumb = thumb,
-				art = thumb
+				thumb = R(name + '.jpg')
 			))
 			
 	if len(oc) == 0:
@@ -132,8 +130,7 @@ def GetRecordings():
 				url = url + encoded_data,
 				title = title,
 				summary = String.DecodeHTMLEntities(summary.strip()),
-				thumb = thumb,
-				art = thumb
+				thumb = thumb
 			))
 	if len(oc) == 0:
 		return ObjectContainer(title2='Recordings', header='Recordings', message='No Recordings found')
@@ -186,7 +183,7 @@ def GetGuide():
 				}
 			)
 		show_info = JSON.StringFromObject(show_info)
-		oc.add(DirectoryObject(key = Callback(GuideSubMenu, title=name, data=String.Encode(show_info)), title=name))		
+		oc.add(DirectoryObject(key = Callback(GuideSubMenu, title=name, data=String.Encode(show_info)), title=name, thumb=R(name + '.jpg')))		
 	return oc
 		
 ####################################################################################################
