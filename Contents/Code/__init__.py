@@ -5,6 +5,9 @@ PREFIX 		= '/video/ustvnow'
 ART 		= 'art-default.jpeg'
 ICON 		= 'icon-default.png'
 ICON_PREFS 	= 'icon-prefs.png'
+XPATHS		= {'Live'		: "//div[contains(@class, 'livetv-content-pages')]",
+			   'Favorites'	: "//div[contains(@class, 'livetv-content-pages')]",
+			   'Recordings'	: "//div[contains(@class, 'reccontentpage')]"}
 
 BASE_URL		 = 'http://m.ustvnow.com'
 GUIDE			 = 'http://www.ustvnow.com?a=do_login&force_redirect=1&manage_proper=1&input_username=%s&input_password=%s'
@@ -15,9 +18,6 @@ LIVETV			 = BASE_URL + '/iphone/1/live/playingnow?pgonly=true&token=%s'
 RECORDINGS		 = BASE_URL + '/iphone/1/dvr/viewdvrlist?pgonly=true&token=%s'
 FAVORITES		 = BASE_URL + '/iphone/1/live/showfavs?pgonly=true&token=%s'
 ADD_FAVORITE	 = BASE_URL + '/iphone/1/live/updatefavs?prgsvcid=%s&token=%s&action=add'
-XPATHS			 = {'Live': "//div[contains(@class, 'livetv-content-pages')]",
-					'Favorites': "//div[contains(@class, 'livetv-content-pages')]",
-					'Recordings': "//div[contains(@class, 'reccontentpage')]"}
 
 ####################################################################################################
 def FormatDate(date):
@@ -27,7 +27,7 @@ def FormatDate(date):
 	return start + '-' + end
 
 def GetURL(network):
-	page = HTML.ElementFromURL(LIVETV % (Dict['token']))
+	page = HTML.ElementFromURL(LIVETV % (Dict['token']), cacheTime=0)
 	node = page.xpath("//h1[contains(., '" + network + "')]/../..")
 	href = node[0].xpath(".//a[contains(@class, 'viewlink')]")
 	if len(href) > 0:
@@ -67,7 +67,7 @@ def MainMenu(view_group='InfoList'):
 @route(PREFIX + '/getitems')
 def GetItems(title, url, xp):
 	oc = ObjectContainer(title2=title)
-	page = HTML.ElementFromURL(url % (Dict['token']))
+	page = HTML.ElementFromURL(url % (Dict['token']), cacheTime=0)
 	items = page.xpath(xp)
 	for item in items:
 		url = item.xpath('.//a[@class="viewlink"]')
@@ -96,7 +96,7 @@ def GetItems(title, url, xp):
 @route(PREFIX + '/getguide')
 def GetGuide():
 	oc = ObjectContainer(title2='Guide')
-	page = HTML.ElementFromURL(GUIDE % (Prefs["username"], Prefs["password"]))
+	page = HTML.ElementFromURL(GUIDE % (Prefs["username"], Prefs["password"]), cacheTime=0)
 	channels = page.xpath('//td[contains(@class, "chnl")]')
 	for channel in channels:
 		show_info = []
@@ -159,7 +159,6 @@ def ChannelOptions(title, summary, network, ids):
 	url = GetURL(network)
 	rec_id, del_id, fav_id = ids.split('||')
 	encoded_data = URLEncode(title, summary, network)
-
 	if url is not None:
 		oc.add(VideoClipObject(
 			url = BASE_URL + url + encoded_data,
@@ -181,15 +180,15 @@ def ChannelOptions(title, summary, network, ids):
 @route(PREFIX + '/recordmenu')
 def RecordMenu(type, id):
 	if type == 'Record':
-		data = HTTP.Request(RECORD_PROGRAM % (id, Dict['token']))
+		data = HTTP.Request(RECORD_PROGRAM % (id, Dict['token']), cacheTime=0)
 	else:
-		data = HTTP.Request(DELETE_RECORDING % (id, Dict['token']))
+		data = HTTP.Request(DELETE_RECORDING % (id, Dict['token']), cacheTime=0)
 	return ObjectContainer(title2=type, header=type, message=data.content)
 
 ####################################################################################################
 @route(PREFIX + '/favoritemenu')
 def FavoriteMenu(id):
-	data = XML.ElementFromURL(ADD_FAVORITE % (id, Dict['token']))
+	data = XML.ElementFromURL(ADD_FAVORITE % (id, Dict['token']), cacheTime=0)
 	return ObjectContainer(title2='Add to Favorites', header='Favorites', message='Favorite added successfully')
 
 ####################################################################################################
