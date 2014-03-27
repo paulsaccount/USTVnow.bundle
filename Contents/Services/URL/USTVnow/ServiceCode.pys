@@ -1,57 +1,47 @@
 ####################################################################################################
-def MetadataObjectForURL(url):	
-	hash = url.split('#')[1]
-	parts = String.Decode(hash).split('::')	
-	
-	return VideoClipObject(
-		title = parts[1],
-		summary = parts[0],
-		thumb = R(parts[2] + '.jpg')
-	)
+def MetadataObjectForURL(url):
+    hash = url.split('#')[1]
+    parts = String.Decode(hash).split('::')
+
+    return VideoClipObject(
+        title = parts[1],
+        summary = parts[0],
+        thumb = R(parts[2] + '.jpg')
+    )
 
 ####################################################################################################
-def MediaObjectsForURL(url):	
-	video_url = HTML.ElementFromURL(url).xpath('//video')[0].get('src')
-	if Client.Platform in ['Roku']:	
-		return [
-			MediaObject(			
-				audio_channels = 2,
-				parts = [
-					PartObject(key=HTTPLiveStreamURL(Callback(PlayVideo, url=video_url)))
-				]
-			)
-		]
-	else:		
-		return [
-			MediaObject(			
-				audio_channels = 2,
-				parts = [
-					PartObject(key=HTTPLiveStreamURL(url=video_url))
-				]
-			)
-		]		
+def MediaObjectsForURL(url):
+    video_url = HTML.ElementFromURL(url).xpath('//video')[0].get('src')
+    return [
+        MediaObject(
+            audio_channels = 2,
+            parts = [
+                PartObject(key=HTTPLiveStreamURL(Callback(PlayVideo, url=video_url)))
+            ]
+        )
+    ]
 
-####################################################################################################	
+####################################################################################################
 @indirect
 def PlayVideo(url):
-	streams = []
-	playList = HTTP.Request(url).content
-	for line in playList.splitlines():
-		if 'BANDWIDTH' in line:
-			stream = {}
-			stream['bitrate'] = int(Regex('(?<=BANDWIDTH=)[0-9]+').search(line).group(0))		 
+    streams = []
+    playList = HTTP.Request(url).content
+    for line in playList.splitlines():
+        if 'BANDWIDTH' in line:
+            stream = {}
+            stream['bitrate'] = int(Regex('(?<=BANDWIDTH=)[0-9]+').search(line).group(0))
 
-			if 'RESOLUTION' in line:
-				stream['resolution'] = int(Regex('(?<=RESOLUTION=)[0-9]+x[0-9]+').search(line).group(0).split('x')[1])
-			else:
-				stream['resolution'] = 0
+            if 'RESOLUTION' in line:
+                stream['resolution'] = int(Regex('(?<=RESOLUTION=)[0-9]+x[0-9]+').search(line).group(0).split('x')[1])
+            else:
+                stream['resolution'] = 0
 
-		elif '.m3u8' in line:
-			if not line.startswith('http://'):
-				path = url[:url.rfind('/') + 1]
-				stream['url'] = path + line
-					
-			streams.append(stream)
-				
-	sorted_streams = sorted(streams, key = lambda stream: stream['bitrate'], reverse = True)
-	return IndirectResponse(VideoClipObject, key=HTTPLiveStreamURL(url=sorted_streams[0]['url']))
+        elif '.m3u8' in line:
+            if not line.startswith('http://'):
+                path = url[:url.rfind('/') + 1]
+                stream['url'] = path + line
+
+            streams.append(stream)
+
+    sorted_streams = sorted(streams, key = lambda stream: stream['bitrate'], reverse = True)
+    return IndirectResponse(VideoClipObject, key=HTTPLiveStreamURL(url=sorted_streams[0]['url']))
