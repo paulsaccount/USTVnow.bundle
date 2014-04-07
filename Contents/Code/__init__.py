@@ -122,10 +122,13 @@ def GetGuide():
                 del_id = ''
 
             fav_id = content.xpath('.//a[contains(@class, "play")]')
-            if len(fav_id) > 0:
-                fav_id = fav_id[0].get('onclick').split('playVideo("')[1].split('_')[0]
-            else:
-                fav_id = ''
+            if len(fav_id) > 0:                
+                playVideo = fav_id[0].get('onclick').split('playVideo("')
+                if len(playVideo) > 1:                    
+                    fav_id = playVideo[1].split('_')[0]
+                else:
+                    fav_id = ''
+           
 
             show_info.append({
                 'channel': href.get('title').split('Watch ')[1],
