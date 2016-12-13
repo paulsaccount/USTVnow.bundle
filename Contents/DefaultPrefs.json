@@ -11,5 +11,12 @@
         "label": "Password",
         "default": "",
         "option": "hidden"
-    }
+    },
+	{
+		"id": "quality",
+		"type": "enum",
+		"label": "Video Quality",
+		"values": ["Low", "Medium", "High", "HD"],
+		"default": "HD"
+	}
 ]
