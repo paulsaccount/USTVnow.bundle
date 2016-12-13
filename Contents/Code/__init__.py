@@ -58,6 +58,7 @@ def GetItems(title, url):
     for item in page:
         smil_url = item['url']
         codecs = get_Codecs(smil_url)
+        Log(codecs)
         if len(item['description']) > 0:
             summary = item['description']
         else:
@@ -81,6 +82,7 @@ def GetItems(title, url):
 
 @route(PREFIX + '/createvideoclipobject', include_container=bool)
 def CreateVideoClipObject(smil_url, title, summary, thumb, duration, video_codec, resolution, include_container=False, **kwargs):
+    Log(video_codec)
     videoclip_obj = VideoClipObject(
         key = Callback(CreateVideoClipObject, smil_url=smil_url, title=title, summary=summary, thumb=thumb, duration=int(duration), video_codec=video_codec, resolution=resolution, include_container=True),
         rating_key = smil_url,
@@ -122,18 +124,21 @@ def FormatDate(date):
 def get_Codecs(smil_url):
     playList = HTTP.Request(smil_url).content
     for line in playList.splitlines():
-        stream = {}
-        if 'RESOLUTION' in line:
-            stream['resolution'] = int(Regex('(?<=RESOLUTION=)[0-9]+x[0-9]+').search(line).group(0).split('x')[1])
-        else:
-            stream['resolution'] = 0
-        
-        if 'CODECS' in line:
-            stream['video_codec'] = re.findall(r'(?<=CODECS=)"(.*?)"', line)[0].split(',')[0]
-            stream['audio_codec'] = re.findall(r'(?<=CODECS=)"(.*?)"', line)[0].split(',')[1]
-        else:
-            stream['video_codec'] = 'VideoCodec.H264'
-            stream['audio_codec'] = 'AudioCodec.AAC'
+        if 'BANDWIDTH' in line:
+            stream = {}
+            stream['bitrate'] = int(Regex('(?<=BANDWIDTH=)[0-9]+').search(line).group(0))
+
+            if 'RESOLUTION' in line:
+                stream['resolution'] = int(Regex('(?<=RESOLUTION=)[0-9]+x[0-9]+').search(line).group(0).split('x')[1])
+            else:
+                stream['resolution'] = 0
+            
+            if 'CODECS' in line:
+                stream['video_codec'] = re.findall(r'(?<=CODECS=)"(.*?)"', line)[0].split(',')[0]
+                stream['audio_codec'] = re.findall(r'(?<=CODECS=)"(.*?)"', line)[0].split(',')[1]
+            else:
+                stream['video_codec'] = 'VideoCodec.H264'
+                stream['audio_codec'] = 'AudioCodec.AAC'
             
     return stream
 ####################################################################################################
