@@ -4,7 +4,7 @@ USTVnow.bundle
 
 ## Getting Started
 
-1.  [Download the zip file]. (https://github.com/xxNoxiouSxx/USTVnow.bundle/archive/USTVnow-Plus-Port.zip)
+1.  [Download the zip file](https://github.com/xxNoxiouSxx/USTVnow.bundle/archive/master.zip).
 2.  Unzip and rename to `USTVnow.bundle`.
 3.  Copy to your Plex Plugin folder:
 
