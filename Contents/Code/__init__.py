@@ -58,7 +58,6 @@ def GetItems(title, url):
     for item in page:
         smil_url = item['url']
         codecs = get_Codecs(smil_url)
-        Log(codecs)
         if len(item['description']) > 0:
             summary = item['description']
         else:
@@ -82,7 +81,6 @@ def GetItems(title, url):
 
 @route(PREFIX + '/createvideoclipobject', include_container=bool)
 def CreateVideoClipObject(smil_url, title, summary, thumb, duration, video_codec, resolution, include_container=False, **kwargs):
-    Log(video_codec)
     videoclip_obj = VideoClipObject(
         key = Callback(CreateVideoClipObject, smil_url=smil_url, title=title, summary=summary, thumb=thumb, duration=int(duration), video_codec=video_codec, resolution=resolution, include_container=True),
         rating_key = smil_url,
@@ -100,6 +98,7 @@ def CreateVideoClipObject(smil_url, title, summary, thumb, duration, video_codec
                 audio_codec = AudioCodec.AAC,
                 audio_channels = 2,
                 video_resolution = resolution,
+                optimized_for_streaming = True
             )
         ]
     )
