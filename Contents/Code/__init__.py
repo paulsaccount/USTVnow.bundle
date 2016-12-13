@@ -55,7 +55,6 @@ def GetItems(title, url):
     elif quality == "Low":
         quality = '1' 
     page = get_link(int(quality))
-    Log(quality)
     for item in page:
         smil_url = item['url']
         codecs = get_Codecs(smil_url)
@@ -123,21 +122,19 @@ def FormatDate(date):
 def get_Codecs(smil_url):
     playList = HTTP.Request(smil_url).content
     for line in playList.splitlines():
-        if 'BANDWIDTH' in line:
-            stream = {}
-            stream['bitrate'] = int(Regex('(?<=BANDWIDTH=)[0-9]+').search(line).group(0))
-  
-            if 'RESOLUTION' in line:
-                    stream['resolution'] = int(Regex('(?<=RESOLUTION=)[0-9]+x[0-9]+').search(line).group(0).split('x')[1])
-            else:
-                stream['resolution'] = 0
+        stream = {}
+        if 'RESOLUTION' in line:
+            stream['resolution'] = int(Regex('(?<=RESOLUTION=)[0-9]+x[0-9]+').search(line).group(0).split('x')[1])
+        else:
+            stream['resolution'] = 0
+        
+        if 'CODECS' in line:
+            stream['video_codec'] = re.findall(r'(?<=CODECS=)"(.*?)"', line)[0].split(',')[0]
+            stream['audio_codec'] = re.findall(r'(?<=CODECS=)"(.*?)"', line)[0].split(',')[1]
+        else:
+            stream['video_codec'] = 'VideoCodec.H264'
+            stream['audio_codec'] = 'AudioCodec.AAC'
             
-            if 'CODECS' in line:
-                stream['video_codec'] = re.findall(r'(?<=CODECS=)"(.*?)"', line)[0].split(',')[0]
-                stream['audio_codec'] = re.findall(r'(?<=CODECS=)"(.*?)"', line)[0].split(',')[1]
-            else:
-                stream['video_codec'] = 'VideoCodec.H264'
-                stream['audio_codec'] = 'AudioCodec.AAC'
     return stream
 ####################################################################################################
 # def Get_Channels(title, url, xp):
