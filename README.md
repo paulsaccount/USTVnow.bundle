@@ -1,7 +1,5 @@
-USTVnow.bundle
+USTVnow Plex Plug-in
 ==============
-# USTVnow Plex Plug-in
-
 ## Getting Started
 
 1.  [Download the zip file](https://github.com/xxNoxiouSxx/USTVnow.bundle/archive/master.zip).
