@@ -56,8 +56,7 @@ def GetItems(title, url):
         quality = '1' 
     page = get_link(int(quality))
     for item in page:
-        smil_url = item['url']
-        codecs = get_Codecs(smil_url)
+        codecs = get_Codecs(item['url'])
         if len(item['description']) > 0:
             summary = item['description']
         else:
@@ -65,11 +64,11 @@ def GetItems(title, url):
         try: durationTime = int(item['duration']) * 1000
         except: durationTime = 0
         oc.add(CreateVideoClipObject(
-                smil_url = smil_url,
-                title = item['name'] + ' ' + '-' + ' ' + item['title'],
+                smil_url = item['url'],
+                title = item['title'],
                 summary = summary,
                 thumb = R(item['name'] + '.jpg'),
-                duration = durationTime,
+                duration = int(item['duration']),
                 video_codec = codecs['video_codec'],
                 resolution = codecs['resolution'],
                 ))
@@ -98,7 +97,7 @@ def CreateVideoClipObject(smil_url, title, summary, thumb, duration, video_codec
                 audio_codec = AudioCodec.AAC,
                 audio_channels = 2,
                 video_resolution = resolution,
-                optimized_for_streaming = True
+                duration = int(duration),
             )
         ]
     )
@@ -120,12 +119,12 @@ def FormatDate(date):
     end = datetime.strptime(times[1], "%H:%M%p").strftime("%I:%M%p")
     return start + '-' + end
 ####################################################################################################
-def get_Codecs(smil_url):
-    playList = HTTP.Request(smil_url).content
+def get_Codecs(url):
+    playList = HTTP.Request(url).content
     for line in playList.splitlines():
         if 'BANDWIDTH' in line:
             stream = {}
-            stream['bitrate'] = int(Regex('(?<=BANDWIDTH=)[0-9]+').search(line).group(0))
+            # stream['bitrate'] = int(Regex('(?<=BANDWIDTH=)[0-9]+').search(line).group(0))
 
             if 'RESOLUTION' in line:
                 stream['resolution'] = int(Regex('(?<=RESOLUTION=)[0-9]+x[0-9]+').search(line).group(0).split('x')[1])
@@ -134,10 +133,8 @@ def get_Codecs(smil_url):
             
             if 'CODECS' in line:
                 stream['video_codec'] = re.findall(r'(?<=CODECS=)"(.*?)"', line)[0].split(',')[0]
-                stream['audio_codec'] = re.findall(r'(?<=CODECS=)"(.*?)"', line)[0].split(',')[1]
             else:
                 stream['video_codec'] = 'VideoCodec.H264'
-                stream['audio_codec'] = 'AudioCodec.AAC'
             
     return stream
 ####################################################################################################
@@ -213,19 +210,18 @@ def get_link(quality):
                         channels.append({
                             'name': name,
                             'url': url,
-                            'title': i['title'],
-                            'episode_title': i['episode_title'],
+                            'title': name + ' ' + '-' + ' ' + i['title'],
                             'description': i['description'],
-                            'duration': i['runtime']
+                            'duration': (i['runtime'] * 1000)
                              })
                 else:
                     channels.append({
                         'name': name,
                         'url': url,
-                        'title': i['title'],
+                        'title': name + ' ' + '-' + ' ' + i['title'],
                         'episode_title': i['episode_title'],
                         'description': i['description'],
-                        'duration': i['runtime']
+                        'duration': (i['runtime'] * 1000)
                         })
         return channels
 ####################################################################################################    
