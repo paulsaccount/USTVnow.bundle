@@ -92,6 +92,7 @@ def CreateVideoClipObject(smil_url, title, summary, thumb, duration, video_codec
                 parts = [
                     PartObject(key=Callback(PlayVideo, smil_url=smil_url))
                 ],
+                protocol = 'hls',
                 container = Container.MP4,
                 video_codec = video_codec,
                 audio_codec = AudioCodec.AAC,
@@ -107,8 +108,8 @@ def CreateVideoClipObject(smil_url, title, summary, thumb, duration, video_codec
         return videoclip_obj
 
 ####################################################################################################
-@route(PREFIX + '/playvideo', resolution=int)
 @indirect
+@route(PREFIX + '/playvideo')
 def PlayVideo(smil_url):
     return IndirectResponse(VideoClipObject, key=HTTPLiveStreamURL(url=smil_url))
 
@@ -219,7 +220,6 @@ def get_link(quality):
                         'name': name,
                         'url': url,
                         'title': name + ' ' + '-' + ' ' + i['title'],
-                        'episode_title': i['episode_title'],
                         'description': i['description'],
                         'duration': (i['runtime'] * 1000)
                         })
