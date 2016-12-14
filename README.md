@@ -12,6 +12,7 @@ USTVnow Plex Plug-in
 
 ## Change Log
 
+**2016-12-13:** Force HLS in MediaObject.<br>
 **2016-12-13:** Porting API logic and general functionality from TVaddons USTVnow Plus on Kodi. Only LIVE streams at this time for base release.<br>
 **2016-12-13:** Forking repo from [jwdempsey/USTVnow.bundle](https://github.com/jwdempsey/USTVnow.bundle).
 
