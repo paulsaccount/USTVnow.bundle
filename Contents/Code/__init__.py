@@ -61,8 +61,6 @@ def GetItems(title, url):
             summary = item['description']
         else:
             summary = 'No description available'
-        try: durationTime = int(item['duration']) * 1000
-        except: durationTime = 0
         oc.add(CreateVideoClipObject(
                 smil_url = item['url'],
                 title = item['title'],
@@ -78,19 +76,19 @@ def GetItems(title, url):
         return oc
 ####################################################################################################
 
-@route(PREFIX + '/createvideoclipobject', include_container=bool)
+@route(PREFIX + '/createvideoclipobject', duration=int, resolution=int, include_container=bool)
 def CreateVideoClipObject(smil_url, title, summary, thumb, duration, video_codec, resolution, include_container=False, **kwargs):
     videoclip_obj = VideoClipObject(
-        key = Callback(CreateVideoClipObject, smil_url=smil_url, title=title, summary=summary, thumb=thumb, duration=int(duration), video_codec=video_codec, resolution=resolution, include_container=True),
+        key = Callback(CreateVideoClipObject, smil_url=smil_url, title=title, summary=summary, thumb=thumb, duration=duration, video_codec=video_codec, resolution=resolution, include_container=True),
         rating_key = smil_url,
         title = title,
         summary = summary,
         thumb = thumb,
-        duration = int(duration),
+        duration = duration,
         items = [
             MediaObject(
                 parts = [
-                    PartObject(key=Callback(PlayVideo, smil_url=smil_url))
+                    PartObject(key=Callback(PlayVideo, smil_url=smil_url, resolution=resolution))
                 ],
                 protocol = 'hls',
                 container = Container.MP4,
@@ -98,8 +96,8 @@ def CreateVideoClipObject(smil_url, title, summary, thumb, duration, video_codec
                 audio_codec = AudioCodec.AAC,
                 audio_channels = 2,
                 video_resolution = resolution,
-                duration = int(duration),
-            )
+                duration = int(duration)
+            ) 
         ]
     )
     if include_container:
@@ -108,10 +106,10 @@ def CreateVideoClipObject(smil_url, title, summary, thumb, duration, video_codec
         return videoclip_obj
 
 ####################################################################################################
+@route(PREFIX + '/playvideo', resolution=int)
 @indirect
-@route(PREFIX + '/playvideo')
-def PlayVideo(smil_url):
-    return IndirectResponse(VideoClipObject, key=HTTPLiveStreamURL(url=smil_url))
+def PlayVideo(smil_url, resolution):
+    return IndirectResponse(VideoClipObject, key=smil_url)
 
 ####################################################################################################
 def FormatDate(date):
@@ -192,20 +190,18 @@ def get_Codecs(url):
 ####################################################################################################
 def get_link(quality):
         activation_check = account_check()
-        passkey = get_passkey()
         content = get_json('gtv/1/live/channelguide', {'token': (Dict['token'])})
         channels = []
-        results = content['results']
-        stream_type = 'rtmp'
-        for i in results:
+        original_quality = quality
+        for i in content['results']:
+            if i['scode'] != 'whvl':
+                quality = original_quality
+            else:
+                quality = (original_quality - 1)
             if i['order'] == 1:
-                if quality == 4 and i['scode'] == 'whvl':
-                    quality = (quality - 1)
-                stream = get_json('stream/1/live/view', {'token': (Dict['token']), 'key': passkey, 'scode': i['scode']})['stream']
+                stream = get_json('stream/1/live/view', {'token': (Dict['token']), 'key': (content['globalparams']['passkey']), 'scode': i['scode']})['stream']
                 url = stream.replace('smil:', 'mp4:').replace('USTVNOW1', 'USTVNOW').replace('USTVNOW', 'USTVNOW' + str(quality))
                 name = cleanChanName(i['stream_code'])
-                thumb = mcBASE_URL + '/' + i['img']
-                mediatype = i['mediatype']
                 if activation_check == 'True':
                     if name in ['CW','ABC','FOX','PBS','CBS','NBC','MY9']:
                         channels.append({
