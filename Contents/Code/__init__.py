@@ -54,22 +54,24 @@ def GetItems(title, url):
         quality = '2'
     elif quality == "Low":
         quality = '1' 
-    page = get_link(int(quality))
+    page = get_channels(int(quality))
     for item in page:
-        codecs = get_Codecs(item['url'])
+        # codecs = get_Codecs(item['url'])
         if len(item['description']) > 0:
             summary = item['description']
         else:
             summary = 'No description available'
         oc.add(CreateVideoClipObject(
-                smil_url = item['url'],
+                name = item['name'],
                 title = item['title'],
                 summary = summary,
                 thumb = R(item['name'] + '.jpg'),
                 duration = int(item['duration']),
-                video_codec = codecs['video_codec'],
-                resolution = codecs['resolution'],
+                quality = quality,
+                # video_codec = codecs['video_codec'],
+                # resolution = codecs['resolution'],
                 ))
+        # Log(codecs['video_codec'])
     if len(oc) == 0:
         return ObjectContainer(title2=title, header=title, message='None Found')
     else:
@@ -77,28 +79,15 @@ def GetItems(title, url):
 ####################################################################################################
 
 @route(PREFIX + '/createvideoclipobject', duration=int, resolution=int, include_container=bool)
-def CreateVideoClipObject(smil_url, title, summary, thumb, duration, video_codec, resolution, include_container=False, **kwargs):
+def CreateVideoClipObject(name, title, summary, thumb, duration, quality, include_container=False, **kwargs):
     videoclip_obj = VideoClipObject(
-        key = Callback(CreateVideoClipObject, smil_url=smil_url, title=title, summary=summary, thumb=thumb, duration=duration, video_codec=video_codec, resolution=resolution, include_container=True),
+        key = Callback(CreateVideoClipObject, name=name, title=title, summary=summary, thumb=thumb, duration=duration, quality=quality, include_container=True),
         rating_key = smil_url,
         title = title,
         summary = summary,
         thumb = thumb,
         duration = duration,
-        items = [
-            MediaObject(
-                parts = [
-                    PartObject(key=Callback(PlayVideo, smil_url=smil_url, resolution=resolution))
-                ],
-                protocol = 'hls',
-                container = Container.MP4,
-                video_codec = video_codec,
-                audio_codec = AudioCodec.AAC,
-                audio_channels = 2,
-                video_resolution = resolution,
-                duration = int(duration)
-            ) 
-        ]
+        items = MediaObjectsForURL(duration, quality, name)
     )
     if include_container:
         return ObjectContainer(objects=[videoclip_obj])
@@ -108,8 +97,10 @@ def CreateVideoClipObject(smil_url, title, summary, thumb, duration, video_codec
 ####################################################################################################
 @route(PREFIX + '/playvideo', resolution=int)
 @indirect
-def PlayVideo(smil_url, resolution):
-    return IndirectResponse(VideoClipObject, key=smil_url)
+def PlayVideo(quality, name):
+    url = get_url(int(quality), name)
+    Log(url)
+    return IndirectResponse(VideoClipObject, key=url[0]['url'])
 
 ####################################################################################################
 def FormatDate(date):
@@ -137,89 +128,87 @@ def get_Codecs(url):
             
     return stream
 ####################################################################################################
-# def Get_Channels(title, url, xp):
-#     content = get_json('gtv/1/live/channelguide', {'token': (Dict['token'])})
-#     img = get_json()
-#     #page = HTML.ElementFromURL(url % (Dict['token']), cacheTime=0)
-#     #items = page.xpath(xp)
-#     channels = []
-#     results = content['results'];
-#     for i in results:
-#         try:
-#             if i['order'] != 1:
-#                 from datetime import datetime
-#                 event_date_time = datetime.fromtimestamp(i['ut_start']).strftime('%I:%M %p').lstrip('0')
-#                 name = Addon.cleanChanName(i['stream_code'])
-#                 mediatype = i['mediatype']
-#                 poster_url = mcBASE_URL + '/gtv/1/live/viewposter?srsid=' + str(i['srsid']) + '&cs=' + i['callsign'] + '&tid=' + mediatype
-#                 mediatype = mediatype.replace('SH', 'tvshow').replace('EP', 'episode').replace('MV', 'movie').replace('SP', 'tvshow')
-# #	                rec_url = '/gtv/1/dvr/updatedvr?scheduleid=' + str(i['scheduleid']) + '&token=' + self.token + '&action=add'
-# #	                set_url = '/gtv/1/dvr/updatedvrtimer?connectorid=' + str(i['connectorid']) + '&prgsvcid=' + str(i['prgsvcid']) + '&eventtime=' + str(i['event_time']) + '&token=' + self.token + '&action=add'
-#                 # if Addon.get_setting('free_package') != 'true':
-#                 #     if name in ['CW','ABC','FOX','PBS','CBS','NBC','MY9']:
-#                 #         channels.append({
-#                 #             'name': name,
-#                 #             'episode_title': i['episode_title'],
-#                 #             'title': i['title'],
-#                 #             'plot': i['description'],
-#                 #             'mediatype': mediatype,
-#                 #             'playable': True,
-#                 #             'poster_url': poster_url,
-#                 #             'rec_url': rec_url,
-#                 #             'set_url': set_url,
-#                 #             'event_date_time': event_date_time
-#                 #                 })
-#                 #     else:
-#                 channels.append({
-#                     'name': name,
-#                     'episode_title': i['episode_title'],
-#                     'title': i['title'],
-#                     'plot': i['description'],
-#                     'mediatype': mediatype,
-#                     'playable': True,
-#                     'poster_url': poster_url,
-#                     'rec_url': rec_url,
-#                     'set_url': set_url,
-#                     'event_date_time': event_date_time
-#                         })
-#         except:
-#             pass
-# 
-#     return channels
-
-####################################################################################################
-def get_link(quality):
+def get_url(quality, name):
         activation_check = account_check()
         content = get_json('gtv/1/live/channelguide', {'token': (Dict['token'])})
         channels = []
         original_quality = quality
+        scode_array = []
         for i in content['results']:
-            if i['scode'] != 'whvl':
-                quality = original_quality
-            else:
-                quality = (original_quality - 1)
             if i['order'] == 1:
-                stream = get_json('stream/1/live/view', {'token': (Dict['token']), 'key': (content['globalparams']['passkey']), 'scode': i['scode']})['stream']
-                url = stream.replace('smil:', 'mp4:').replace('USTVNOW1', 'USTVNOW').replace('USTVNOW', 'USTVNOW' + str(quality))
-                name = cleanChanName(i['stream_code'])
-                if activation_check == 'True':
-                    if name in ['CW','ABC','FOX','PBS','CBS','NBC','MY9']:
+                if name == cleanChanName(i['stream_code']):
+                    # scode_array.append(i['scode'])
+                    # mystring = ",".join(scode_array)
+                    try:
+                        if i['scode'] != 'whvl':
+                            quality = original_quality
+                        else:
+                            quality = (original_quality - 1)
+                    except:
+                        pass
+                    stream = get_json('stream/1/live/view', {'token': (Dict['token']), 'key': (content['globalparams']['passkey']), 'scode': i['scode']})['stream']
+                    url = stream.replace('smil:', 'mp4:').replace('USTVNOW1', 'USTVNOW').replace('USTVNOW', 'USTVNOW' + str(quality))
+                    name = cleanChanName(i['stream_code'])
+                    if activation_check == 'True':
+                        if name in ['CW','ABC','FOX','PBS','CBS','NBC','MY9']:
+                            channels.append({
+                                'name': name,
+                                'url': url
+                                 })
+                    else:
                         channels.append({
                             'name': name,
-                            'url': url,
+                            'url': url
+                            })
+        return channels
+####################################################################################################
+def get_channels(quality):
+        activation_check = account_check()
+        content = get_json('gtv/1/live/channelguide', {'token': (Dict['token'])})
+        channels = []
+        results = content['results'];
+        for i in results:
+            try:
+                if i['order'] == 1:
+                    from datetime import datetime
+                    event_date_time = datetime.fromtimestamp(i['ut_start']).strftime('%I:%M %p').lstrip('0')
+                    name = cleanChanName(i['stream_code'])
+                    mediatype = i['mediatype']
+                    poster_url = mcBASE_URL + '/gtv/1/live/viewposter?srsid=' + str(i['srsid']) + '&cs=' + i['callsign'] + '&tid=' + mediatype
+                    mediatype = mediatype.replace('SH', 'tvshow').replace('EP', 'episode').replace('MV', 'movie').replace('SP', 'tvshow')
+                    rec_url = '/gtv/1/dvr/updatedvr?scheduleid=' + str(i['scheduleid']) + '&token=' + (Dict['token']) + '&action=add'
+                    set_url = '/gtv/1/dvr/updatedvrtimer?connectorid=' + str(i['connectorid']) + '&prgsvcid=' + str(i['prgsvcid']) + '&eventtime=' + str(i['event_time']) + '&token=' + (Dict['token']) + '&action=add'
+                    if activation_check == 'True':
+                        if name in ['CW','ABC','FOX','PBS','CBS','NBC','MY9']:
+                            channels.append({
+                                'name': name,
+                                'episode_title': i['episode_title'],
+                                'title': name + ' ' + '-' + ' ' + i['title'],
+                                'description': i['description'],
+                                'mediatype': mediatype,
+                                'playable': True,
+                                'poster_url': poster_url,
+                                'rec_url': rec_url,
+                                'set_url': set_url,
+                                'event_date_time': event_date_time,
+                                'duration': (i['runtime'] * 1000)
+                                })
+                    else:
+                        channels.append({
+                            'name': name,
+                            'episode_title': i['episode_title'],
                             'title': name + ' ' + '-' + ' ' + i['title'],
                             'description': i['description'],
+                            'mediatype': mediatype,
+                            'playable': True,
+                            'poster_url': poster_url,
+                            'rec_url': rec_url,
+                            'set_url': set_url,
+                            'event_date_time': event_date_time,
                             'duration': (i['runtime'] * 1000)
-                             })
-                else:
-                    channels.append({
-                        'name': name,
-                        'url': url,
-                        'title': name + ' ' + '-' + ' ' + i['title'],
-                        'description': i['description'],
-                        'duration': (i['runtime'] * 1000)
-                        })
-
+                            })
+            except:
+                pass
         return channels
 ####################################################################################################    
 def get_passkey():
@@ -289,3 +278,44 @@ def Login():
 			Dict['token'] = (cookie.value)
 			return True
 	return False
+#####################################################################################################
+def parse_query(query, clean=True):
+    queries = cgi.parse_qs(query)
+    q = {}
+    for key, value in queries.items():
+        q[key] = value[0]
+    if clean:
+        q['mode'] = q.get('mode', 'main')
+        q['play'] = q.get('play', '')
+        q['play_dvr'] = q.get('play_dvr', '')
+
+    return q
+#####################################################################################################
+def MediaObjectsForURL(duration, quality, name):
+
+    if Client.Platform in ['Roku']:
+        return [
+            MediaObject(
+                parts = [
+                    PartObject(key=HTTPLiveStreamURL(Callback(PlayVideo, quality=quality, name=name)))
+                ],
+                container = Container.MP4,
+                video_codec = VideoCodec.H264,
+                audio_codec = AudioCodec.AAC,
+                audio_channels = 2,
+                duration = int(duration),
+                ) 
+            ]
+    else:
+        return [
+            MediaObject(
+               parts = [
+                    PartObject(key=Callback(PlayVideo, quality=quality, name=name))
+                ],
+                container = Container.MP4,
+                video_codec = VideoCodec.H264,
+                audio_codec = AudioCodec.AAC,
+                audio_channels = 2,
+                duration = int(duration),
+                ) 
+            ]	

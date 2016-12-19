@@ -12,6 +12,9 @@ USTVnow Plex Plug-in
 
 ## Change Log
 
+**2016-12-19:** First attempt at Roku stream<br>
+**2016-12-19:** Complete rewrite for JSON performance<br>
+**2016-12-14:** Improved JSON response time and "channel not responding" in web client<br>
 **2016-12-14:** Fixed Broken HD URL(s) that were reduced to HIGH from HD due to IF statement<br>
 **2016-12-13:** Force HLS in MediaObject.<br>
 **2016-12-13:** Porting API logic and general functionality from TVaddons USTVnow Plus on Kodi. Only LIVE streams at this time for base release.<br>
