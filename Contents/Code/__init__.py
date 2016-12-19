@@ -82,7 +82,7 @@ def GetItems(title, url):
 def CreateVideoClipObject(name, title, summary, thumb, duration, quality, include_container=False, **kwargs):
     videoclip_obj = VideoClipObject(
         key = Callback(CreateVideoClipObject, name=name, title=title, summary=summary, thumb=thumb, duration=duration, quality=quality, include_container=True),
-        rating_key = smil_url,
+        rating_key = name,
         title = title,
         summary = summary,
         thumb = thumb,
