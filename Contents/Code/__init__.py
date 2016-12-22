@@ -56,7 +56,6 @@ def GetItems(title, url):
         quality = '1' 
     page = get_channels(int(quality))
     for item in page:
-        # codecs = get_Codecs(item['url'])
         if len(item['description']) > 0:
             summary = item['description']
         else:
@@ -67,11 +66,8 @@ def GetItems(title, url):
                 summary = summary,
                 thumb = R(item['name'] + '.jpg'),
                 duration = int(item['duration']),
-                quality = quality,
-                # video_codec = codecs['video_codec'],
-                # resolution = codecs['resolution'],
-                ))
-        # Log(codecs['video_codec'])
+                quality = quality,)
+               )
     if len(oc) == 0:
         return ObjectContainer(title2=title, header=title, message='None Found')
     else:
@@ -87,20 +83,48 @@ def CreateVideoClipObject(name, title, summary, thumb, duration, quality, includ
         summary = summary,
         thumb = thumb,
         duration = duration,
-        items = MediaObjectsForURL(duration, quality, name)
+        items = MediaObjectsFromURL(duration, quality, name)
     )
     if include_container:
         return ObjectContainer(objects=[videoclip_obj])
     else:
         return videoclip_obj
 
-####################################################################################################
-@route(PREFIX + '/playvideo', resolution=int)
+#####################################################################################################
+def MediaObjectsFromURL(duration, quality, name):
+
+    # if Client.Platform in ['Roku']:
+    #     return [
+    #         MediaObject(
+    #             parts = [
+    #                 PartObject(key=HTTPLiveStreamURL(Callback(PlayVideo, quality=quality, name=name)))
+    #             ],
+    #             container = Container.MP4,
+    #             video_codec = VideoCodec.H264,
+    #             audio_codec = AudioCodec.AAC,
+    #             audio_channels = 2,
+    #             duration = int(duration),
+    #             ) 
+    #         ]
+    # else:
+    return [
+        MediaObject(
+           parts = [
+                PartObject(key=HTTPLiveStreamURL(Callback(PlayVideo, quality=quality, name=name)))
+            ],
+            container = Container.MP4,
+            video_codec = VideoCodec.H264,
+            audio_codec = AudioCodec.AAC,
+            audio_channels = 2,
+            duration = duration,
+            optimized_for_streaming = True
+            ) 
+        ]
+#####################################################################################################
 @indirect
 def PlayVideo(quality, name):
-    url = get_url(int(quality), name)
-    Log(url)
-    return IndirectResponse(VideoClipObject, key=url[0]['url'])
+    hlsurl = get_url(int(quality), name)
+    return IndirectResponse(VideoClipObject, key=HTTPLiveStreamURL(hlsurl[0]['url']))
 
 ####################################################################################################
 def FormatDate(date):
@@ -114,7 +138,7 @@ def get_Codecs(url):
     for line in playList.splitlines():
         if 'BANDWIDTH' in line:
             stream = {}
-            # stream['bitrate'] = int(Regex('(?<=BANDWIDTH=)[0-9]+').search(line).group(0))
+            stream['bitrate'] = int(Regex('(?<=BANDWIDTH=)[0-9]+').search(line).group(0))
 
             if 'RESOLUTION' in line:
                 stream['resolution'] = int(Regex('(?<=RESOLUTION=)[0-9]+x[0-9]+').search(line).group(0).split('x')[1])
@@ -278,44 +302,3 @@ def Login():
 			Dict['token'] = (cookie.value)
 			return True
 	return False
-#####################################################################################################
-def parse_query(query, clean=True):
-    queries = cgi.parse_qs(query)
-    q = {}
-    for key, value in queries.items():
-        q[key] = value[0]
-    if clean:
-        q['mode'] = q.get('mode', 'main')
-        q['play'] = q.get('play', '')
-        q['play_dvr'] = q.get('play_dvr', '')
-
-    return q
-#####################################################################################################
-def MediaObjectsForURL(duration, quality, name):
-
-    if Client.Platform in ['Roku']:
-        return [
-            MediaObject(
-                parts = [
-                    PartObject(key=HTTPLiveStreamURL(Callback(PlayVideo, quality=quality, name=name)))
-                ],
-                container = Container.MP4,
-                video_codec = VideoCodec.H264,
-                audio_codec = AudioCodec.AAC,
-                audio_channels = 2,
-                duration = int(duration),
-                ) 
-            ]
-    else:
-        return [
-            MediaObject(
-               parts = [
-                    PartObject(key=Callback(PlayVideo, quality=quality, name=name))
-                ],
-                container = Container.MP4,
-                video_codec = VideoCodec.H264,
-                audio_codec = AudioCodec.AAC,
-                audio_channels = 2,
-                duration = int(duration),
-                ) 
-            ]	

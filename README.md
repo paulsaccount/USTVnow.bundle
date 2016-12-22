@@ -12,6 +12,7 @@ USTVnow Plex Plug-in
 
 ## Change Log
 
+**2016-12-21:** Additional changes to the HLS stream to resolve Roku<br>
 **2016-12-19:** First attempt at Roku stream<br>
 **2016-12-19:** Complete rewrite for JSON performance<br>
 **2016-12-14:** Improved JSON response time and "channel not responding" in web client<br>
